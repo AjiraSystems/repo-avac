@@ -6,8 +6,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Eye, EyeOff, Loader as Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { supabase } from '@/lib/supabase';
+import { toast } from 'sonner';
+import { useRouter } from 'next/navigation';
 
 export default function LoginForm() {
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [form, setForm] = useState({ email: '', password: '' });
@@ -15,8 +19,25 @@ export default function LoginForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    await new Promise((r) => setTimeout(r, 1000));
-    setIsLoading(false);
+
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: form.email,
+        password: form.password,
+      });
+
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+
+      toast.success('Sesión iniciada correctamente');
+      router.push('/dashboard');
+    } catch (error: any) {
+      toast.error('Ocurrió un error inesperado');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

@@ -6,8 +6,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Eye, EyeOff, Loader as Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { supabase } from '@/lib/supabase';
+import { toast } from 'sonner';
+import { useRouter } from 'next/navigation';
 
 export default function RegisterForm() {
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [form, setForm] = useState({
@@ -21,9 +25,54 @@ export default function RegisterForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (form.password !== form.confirmPassword) {
+      toast.error('Las contraseñas no coinciden');
+      return;
+    }
+
+    if (form.password.length < 6) {
+      toast.error('La contraseña debe tener al menos 6 caracteres');
+      return;
+    }
+
     setIsLoading(true);
-    await new Promise((r) => setTimeout(r, 1000));
-    setIsLoading(false);
+
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email: form.email,
+        password: form.password,
+      });
+
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+
+      if (data.user) {
+        const { error: profileError } = await supabase
+          .from('users')
+          .insert({
+            id: data.user.id,
+            email: form.email,
+            first_name: form.firstName,
+            last_name: form.lastName,
+            profession: form.profession,
+          });
+
+        if (profileError) {
+          toast.error('Error al crear el perfil: ' + profileError.message);
+          return;
+        }
+
+        toast.success('Cuenta creada exitosamente. Por favor, inicia sesión.');
+        router.push('/login');
+      }
+    } catch (error: any) {
+      toast.error('Ocurrió un error inesperado');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

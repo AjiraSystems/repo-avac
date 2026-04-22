@@ -1,6 +1,8 @@
 import './globals.css';
 import type { Metadata } from 'next';
 import { Inter, Poppins } from 'next/font/google';
+import { AuthProvider } from '@/providers/AuthProvider';
+import { Toaster } from 'sonner';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 const poppins = Poppins({
@@ -37,7 +39,10 @@ export default function RootLayout({
   return (
     <html lang="es" className="scroll-smooth">
       <body className={`${inter.variable} ${poppins.variable} font-sans antialiased`}>
-        {children}
+        <AuthProvider>
+          {children}
+          <Toaster position="top-right" richColors />
+        </AuthProvider>
       </body>
     </html>
   );
