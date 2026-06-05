@@ -6,7 +6,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Eye, EyeOff, Loader as Loader2 } from 'lucide-react';
 import Link from 'next/link';
-import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 
@@ -15,10 +14,8 @@ export default function RegisterForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [form, setForm] = useState({
-    firstName: '',
-    lastName: '',
+    name: '',
     email: '',
-    profession: '',
     password: '',
     confirmPassword: '',
   });
@@ -39,35 +36,27 @@ export default function RegisterForm() {
     setIsLoading(true);
 
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email: form.email,
-        password: form.password,
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: form.name,
+          email: form.email,
+          password: form.password,
+        }),
       });
 
-      if (error) {
-        toast.error(error.message);
+      const data = await response.json();
+
+      if (!response.ok) {
+        toast.error(data.message || 'Error en el registro');
         return;
       }
 
-      if (data.user) {
-        const { error: profileError } = await supabase
-          .from('users')
-          .insert({
-            id: data.user.id,
-            email: form.email,
-            first_name: form.firstName,
-            last_name: form.lastName,
-            profession: form.profession,
-          });
-
-        if (profileError) {
-          toast.error('Error al crear el perfil: ' + profileError.message);
-          return;
-        }
-
-        toast.success('Cuenta creada exitosamente. Por favor, inicia sesión.');
-        router.push('/login');
-      }
+      toast.success('Cuenta creada exitosamente. Por favor, inicia sesión.');
+      router.push('/login');
     } catch (error: any) {
       toast.error('Ocurrió un error inesperado');
     } finally {
@@ -77,29 +66,16 @@ export default function RegisterForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="firstName" className="text-sm font-medium text-gray-700">Nombre</Label>
-          <Input
-            id="firstName"
-            placeholder="Carlos"
-            value={form.firstName}
-            onChange={(e) => setForm({ ...form, firstName: e.target.value })}
-            required
-            className="h-11 border-gray-200 focus:border-blue-500"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="lastName" className="text-sm font-medium text-gray-700">Apellido</Label>
-          <Input
-            id="lastName"
-            placeholder="Rodríguez"
-            value={form.lastName}
-            onChange={(e) => setForm({ ...form, lastName: e.target.value })}
-            required
-            className="h-11 border-gray-200 focus:border-blue-500"
-          />
-        </div>
+      <div className="space-y-2">
+        <Label htmlFor="name" className="text-sm font-medium text-gray-700">Nombre completo</Label>
+        <Input
+          id="name"
+          placeholder="Carlos Rodríguez"
+          value={form.name}
+          onChange={(e) => setForm({ ...form, name: e.target.value })}
+          required
+          className="h-11 border-gray-200 focus:border-blue-500"
+        />
       </div>
 
       <div className="space-y-2">
@@ -116,23 +92,12 @@ export default function RegisterForm() {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="profession" className="text-sm font-medium text-gray-700">Profesión aeronáutica</Label>
-        <Input
-          id="profession"
-          placeholder="Ej: Piloto Comercial, Ingeniero Aeronáutico..."
-          value={form.profession}
-          onChange={(e) => setForm({ ...form, profession: e.target.value })}
-          className="h-11 border-gray-200 focus:border-blue-500"
-        />
-      </div>
-
-      <div className="space-y-2">
         <Label htmlFor="password" className="text-sm font-medium text-gray-700">Contraseña</Label>
         <div className="relative">
           <Input
             id="password"
             type={showPassword ? 'text' : 'password'}
-            placeholder="Mínimo 8 caracteres"
+            placeholder="Mínimo 6 caracteres"
             value={form.password}
             onChange={(e) => setForm({ ...form, password: e.target.value })}
             required

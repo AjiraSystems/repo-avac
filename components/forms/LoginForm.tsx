@@ -6,9 +6,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Eye, EyeOff, Loader as Loader2 } from 'lucide-react';
 import Link from 'next/link';
-import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
+import { signIn } from 'next-auth/react';
 
 export default function LoginForm() {
   const router = useRouter();
@@ -21,19 +21,19 @@ export default function LoginForm() {
     setIsLoading(true);
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const result = await signIn('credentials', {
+        redirect: false,
         email: form.email,
         password: form.password,
       });
 
-      if (error) {
-        toast.error(error.message);
-        return;
+      if (result?.error) {
+        toast.error('Credenciales incorrectas. Por favor, inténtalo de nuevo.');
+      } else {
+        toast.success('Sesión iniciada correctamente');
+        router.push('/dashboard');
       }
-
-      toast.success('Sesión iniciada correctamente');
-      router.push('/dashboard');
-    } catch (error: any) {
+    } catch (error) {
       toast.error('Ocurrió un error inesperado');
     } finally {
       setIsLoading(false);
